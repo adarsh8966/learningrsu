@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090f19">
+  <meta name="description" content="An offline-friendly learning dashboard for the Rust Systems Engineering Learning Lab, from first variables to a tested mecanum-drive library.">
+  <title>Rust Lab | Your Systems Engineering Roadmap</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090e17;
+      --sidebar: #0d1421;
+      --surface: #121b2a;
+      --surface-2: #172233;
+      --surface-3: #1d2b40;
+      --line: rgba(173,193,218,.12);
+      --text: #ecf3fa;
+      --muted: #94a6ba;
+      --muted-2: #71849c;
+      --accent: #9ff5ba;
+      --accent-strong: #55d895;
+      --accent-dim: rgba(139,235,171,.12);
+      --blue: #a6c9ff;
+      --amber: #fbd58d;
+      --danger: #f1a1a1;
+      --shadow: 0 28px 80px rgba(0,0,0,.18);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    ::selection { background: var(--accent); color: #0d1b16; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 256px minmax(0,1fr); }
+    .sidebar { position: sticky; top: 0; height: 100vh; background: var(--sidebar); border-right: 1px solid var(--line); padding: 26px 18px; display:flex; flex-direction:column; gap:30px; z-index:12; }
+    .brand { display:flex; align-items:center; gap:12px; padding:0 10px; text-decoration:none; }
+    .brand-icon { display:grid;place-items:center; width:43px;height:43px; border-radius:14px; background:linear-gradient(130deg,#baffcc,#5fd99f); color:#122619; font-size:25px; box-shadow:0 6px 22px rgba(107,220,158,.15); }
+    .brand strong { font-size:18px; letter-spacing:-.8px; }
+    .brand span:last-child { display:block; font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:1.45px; }
+    .small-heading { margin:0 10px 11px; font-size:10px; font-weight:800; letter-spacing:1.8px; color:var(--muted-2); text-transform:uppercase; }
+    .nav { display:flex; flex-direction:column;gap:6px; }
+    .nav button { display:flex; align-items:center; gap:12px; width:100%; border:1px solid transparent; border-radius:12px; background:transparent; color:var(--muted); text-align:left; padding:11px 13px; font-size:14px; font-weight:620; }
+    .nav button:hover { color:var(--text); background:rgba(255,255,255,.04); }
+    .nav button.active { border-color:rgba(151,240,184,.14); color:var(--accent); background:var(--accent-dim); }
+    .nav .sym { font-size:18px; width:22px; text-align:center; }
+    .sidebar-bottom { margin-top:auto; }
+    .side-progress { border:1px solid var(--line); border-radius:16px; padding:16px; background:linear-gradient(145deg,rgba(159,245,186,.08),rgba(159,245,186,.018)); }
+    .side-progress > div:first-child { display:flex; align-items:center;justify-content:space-between; gap:8px; font-size:12px;color:var(--muted); }
+    .side-progress strong { color:var(--accent);font-size:15px; }
+    .thin-bar { height:7px; margin-top:13px; background:rgba(163,185,207,.15); border-radius:99px; overflow:hidden; }
+    .thin-bar > div { background:linear-gradient(90deg,var(--accent-strong),var(--accent)); height:100%; width:0%;border-radius:99px;transition:width .35s ease; }
+    .side-progress p { font-size:11px; color:var(--muted); margin:11px 0 0; }
+    .sidebar-foot { color:var(--muted-2); font-size:11px; text-align:center; margin-top:10px; }
+    .main { min-width:0; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:25px clamp(22px,4vw,58px) 0; }
+    .breadcrumbs { color:var(--muted); font-size:12px; letter-spacing:.4px; }
+    .breadcrumbs strong { color:var(--text); }
+    .top-actions { display:flex; align-items:center; gap:9px; }
+    .pill { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:99px; padding:7px 12px; font-size:11px; font-weight:740;letter-spacing:.4px; }
+    .pill .dot { width:6px; height:6px; border-radius:50%; background:var(--accent-strong); }
+    .icon-btn { border:1px solid var(--line); width:34px; height:34px; border-radius:11px; color:var(--text); background:var(--surface); display:grid; place-items:center; }
+    .menu-btn { display:none; }
+    .content { padding: 30px clamp(22px,4vw,58px) 70px; max-width:1450px; margin:0 auto; }
+    .eyebrow { display:flex; align-items:center; gap:10px; color:var(--accent); font-size:11px; font-weight:820; letter-spacing:1.6px; text-transform:uppercase; }
+    .eyebrow::before { content:""; width:20px; height:1px; background:var(--accent); }
+    h1, h2, h3, p { margin-top:0; }
+    h1 { font-size:clamp(32px,4.1vw,55px); letter-spacing:-2.4px; line-height:1.1; margin:17px 0; font-weight:800; }
+    h2 { font-size:24px; letter-spacing:-.9px; margin:0 0 5px; }
+    h3 { font-size:17px; letter-spacing:-.5px; margin-bottom:7px; }
+    p { color:var(--muted); }
+    .hero { position:relative; overflow:hidden; border-radius:24px; border:1px solid rgba(156,239,184,.16); background: radial-gradient(ellipse at 95% 15%,rgba(111,216,156,.17), transparent 43%),linear-gradient(135deg,#182b2e,#142338 70%); padding:clamp(25px,4vw,47px); box-shadow:var(--shadow); }
+    .hero::after { content:"{ }"; position:absolute; right:4%; bottom:-55px; color:rgba(179,247,197,.045); font-size:230px; font-family:monospace; transform:rotate(-13deg);pointer-events:none; }
+    .hero p { max-width:590px; color:#b9caca; font-size:15px; }
+    .hero .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:25px;position:relative;z-index:1; }
+    .btn { border:1px solid transparent; border-radius:11px; background:var(--accent); color:#102519; padding:11px 16px; font-weight:780; font-size:13px; display:inline-flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; }
+    .btn:hover { filter:brightness(1.05); }
+    .btn.secondary { color:var(--text); background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.13); }
+    .btn.outline { background:transparent; border-color:var(--line); color:var(--text); }
+    .btn.danger { background:rgba(241,161,161,.11); border-color:rgba(241,161,161,.2); color:var(--danger); }
+    .btn:disabled { opacity:.45;cursor:not-allowed; }
+    .section { margin-top:37px; }
+    .section-head { display:flex; align-items:end; justify-content:space-between; gap:14px; margin-bottom:17px; }
+    .section-head p { font-size:13px; margin:0; }
+    .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-top:18px; }
+    .stat { background:var(--surface); border:1px solid var(--line); border-radius:17px; padding:20px 22px; min-width:0; }
+    .stat .label { color:var(--muted);font-size:12px; margin-bottom:14px; }
+    .stat .value { display:flex; align-items:baseline; gap:9px;font-size:33px; line-height:1; font-weight:800;letter-spacing:-1.6px; font-variant-numeric:tabular-nums; }
+    .stat .sub { margin-top:10px; font-size:11px;color:var(--muted-2); }
+    .stat .symbol { color:var(--accent);font-size:14px; }
+    .layout-two { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr); gap:17px; }
+    .card { border:1px solid var(--line); background:var(--surface); border-radius:18px; padding:23px; min-width:0; }
+    .card.tint { background:linear-gradient(135deg,rgba(158,245,185,.09),rgba(158,245,185,.025)),var(--surface); border-color:rgba(158,245,185,.17); }
+    .stepnum { display:inline-block; border-radius:6px; background:var(--accent-dim); color:var(--accent); padding:4px 8px; font-size:10px;letter-spacing:.6px;font-weight:780;margin-bottom:18px; }
+    .card p { font-size:13px; }
+    .next-title { font-size:24px; margin:0 0 12px;letter-spacing:-1px; }
+    .lesson-meta { display:flex; gap:14px;flex-wrap:wrap; font-size:11px; color:var(--muted); margin:14px 0 20px; }
+    .checklist { list-style:none; padding:0; margin:12px 0 0; }
+    .checklist li { padding:10px 0; border-bottom:1px solid var(--line); display:flex;gap:10px;align-items:start;font-size:13px; color:#cad6e2; }
+    .checklist li:last-child { border:0; }
+    .bullet { color:var(--accent); }
+    .progress-flex { display:flex; align-items:center; gap:18px; }
+    .donut { width:108px;height:108px; display:grid; place-items:center; flex-shrink:0; border-radius:50%; background:conic-gradient(var(--accent) 0 var(--pct,0%),rgba(160,183,207,.12) var(--pct,0%) 100%); }
+    .donut-inner { background:var(--surface);width:83px;height:83px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center; }
+    .donut-inner strong { font-size:25px;letter-spacing:-1px; }
+    .donut-inner span { color:var(--muted-2); font-size:9px; font-weight:700;text-transform:uppercase;letter-spacing:1px; }
+    .module-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+    .module-card { position:relative; border:1px solid var(--line); border-radius:17px; background:var(--surface); padding:19px; display:flex; flex-direction:column; min-height:169px; text-align:left;color:var(--text); }
+    .module-card:hover, .module-card:focus-visible { border-color:rgba(159,245,186,.45); background:var(--surface-2); }
+    .module-card .top { display:flex;justify-content:space-between;align-items:center;margin-bottom:19px; }
+    .module-index { color:var(--accent);font-family:ui-monospace,monospace;font-size:12px;letter-spacing:1px; }
+    .module-fraction { font-size:11px;color:var(--muted); }
+    .module-card h3 { font-size:16px; margin:0 0 6px; }
+    .module-card p { font-size:12px; margin:0 0 16px;line-height:1.45; }
+    .module-card .thin-bar { margin-top:auto;height:5px; }
+    .module-card .arrow { color:var(--muted);position:absolute;right:17px;bottom:15px;font-size:14px; }
+    .footer-note { color:var(--muted-2); font-size:11px; margin-top:28px; }
+    .hidden { display:none !important; }
+    .header-line { margin-bottom:24px; }
+    .header-line h1 { font-size:clamp(29px,3.7vw,43px); margin-bottom:10px; }
+    .header-line p { font-size:14px;max-width:650px; }
+    .toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center;gap:12px;margin-bottom:20px; }
+    .search { flex:1;min-width:200px;max-width:420px; border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:12px;padding:11px 13px;outline:none; }
+    .search::placeholder { color:var(--muted-2); }
+    .filters { display:flex; gap:6px; align-items:center; }
+    .filter { border:1px solid var(--line); background:transparent; color:var(--muted); padding:8px 11px; border-radius:9px; font-size:12px;font-weight:700; }
+    .filter.active { color:#132a1b;background:var(--accent);border-color:var(--accent); }
+    .module-group { margin-bottom:14px; background:var(--surface);border:1px solid var(--line);border-radius:15px;overflow:hidden; }
+    .module-toggle { border:0;width:100%;padding:21px 22px;display:flex;align-items:center;text-align:left;gap:15px;background:transparent;color:var(--text); }
+    .module-toggle:hover { background:rgba(255,255,255,.02); }
+    .module-num { border-radius:10px;background:var(--accent-dim); color:var(--accent); width:43px;height:43px;display:grid;place-items:center;font-size:14px;font-weight:800;flex-shrink:0; }
+    .module-label { flex:1; }
+    .module-label strong { font-size:15px;display:block; }
+    .module-label span { font-size:11px;color:var(--muted); }
+    .module-progress-text {font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;}
+    .chevron { color:var(--muted);transition:transform .15s; }
+    .module-group.open .chevron { transform:rotate(180deg); }
+    .lesson-rows { padding:0 17px 12px; }
+    .lesson-row { display:flex; align-items:center;justify-content:space-between;gap:12px;padding:13px 7px;border-top:1px solid var(--line); }
+    .lesson-row .info { display:flex;gap:12px;align-items:center;min-width:0; }
+    .lesson-id { font-family:ui-monospace,monospace;color:var(--muted-2);font-size:11px;min-width:34px; }
+    .lesson-title-btn { background:transparent;border:0;color:var(--text);padding:0;text-align:left;font-size:13px;font-weight:650; }
+    .lesson-title-btn:hover { color:var(--accent); }
+    .small-tag { color:var(--muted-2);font-size:10px; white-space:nowrap; }
+    .status-btn { border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap; }
+    .status-btn.done {background:var(--accent-dim); color:var(--accent);border-color:rgba(156,239,184,.25);}
+    .status-btn:hover { border-color:var(--accent); }
+    .detail-layout {display:grid;grid-template-columns:minmax(0,1.55fr) minmax(245px,.8fr);gap:17px;align-items:start;}
+    .lesson-content {padding:clamp(20px,3vw,35px);}
+    .lesson-content h2 {font-size:20px;margin:27px 0 10px;}
+    .lesson-content h2:first-child {margin-top:0;}
+    .lesson-content p, .lesson-content li {font-size:14px;color:#b6c5d5;}
+    .lesson-content li {margin:9px 0;}
+    .code {border:1px solid var(--line);border-radius:12px;background:#0a1321;overflow:auto;padding:17px 18px;color:#e4f0fe;font:12.5px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;tab-size:4;}
+    .inline-code {background:rgba(153,182,221,.11);padding:2px 5px;border-radius:4px;font:12px ui-monospace,monospace;color:var(--blue);}
+    .callout {border-left:3px solid var(--accent);padding:10px 13px;background:var(--accent-dim);border-radius:0 8px 8px 0;color:#d2eddc;font-size:13px;margin:14px 0;}
+    .quiz-option {display:flex;align-items:start;gap:10px;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:12px 13px;margin-top:7px;cursor:pointer;font-size:13px;color:var(--text);}
+    .quiz-option input {accent-color:var(--accent-strong);margin-top:4px;}
+    .quiz-question {border-top:1px solid var(--line);padding:19px 0;}
+    .quiz-question:first-child {border-top:0;}
+    .quiz-question strong {font-size:14px;}
+    .quiz-feedback {margin-top:13px;padding:13px 15px;border-radius:10px;background:var(--accent-dim);color:var(--accent);font-size:13px;}
+    .right-stack {display:flex;flex-direction:column;gap:16px;position:sticky;top:21px;}
+    .notes {display:block;width:100%;resize:vertical;min-height:150px; background:#0b1422;color:var(--text);border:1px solid var(--line);border-radius:11px;padding:13px;line-height:1.55;font-size:13px;}
+    .notes::placeholder {color:var(--muted-2);}
+    .quiet {font-size:11px;color:var(--muted-2);}
+    .big-id {color:var(--accent);font:800 12px ui-monospace,monospace;letter-spacing:1px;}
+    .toggle-line {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;}
+    .settings-row {display:flex;flex-direction:column;gap:12px;}
+    .settings-card {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px;background:var(--surface);border:1px solid var(--line);border-radius:14px;flex-wrap:wrap;}
+    .settings-card p {margin:5px 0 0;font-size:12px;max-width:500px;}
+    .settings-card h3 {margin:0;}
+    .file-picker {display:none;}
+    .empty {text-align:center;padding:40px 16px;color:var(--muted);font-size:13px;}
+    .small-spaced {margin-top:16px;}
+    .open-detail {color:var(--accent);text-decoration:none;font-size:12px;font-weight:750;}
+    .milestone {display:flex;gap:13px;align-items:start;border-bottom:1px solid var(--line);padding:13px 0;}
+    .milestone:last-child {border-bottom:0;}
+    .milestone .marker {width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:var(--surface-3);color:var(--muted);font-size:12px;flex-shrink:0;}
+    .milestone .marker.finished {background:var(--accent-dim);color:var(--accent);}
+    .milestone strong {font-size:12px;display:block;}
+    .milestone span {font-size:11px;color:var(--muted);}
+    .mobile-shade {display:none;}
+    [data-theme="light"] {color-scheme:light;--bg:#f4f7f8;--sidebar:#ffffff;--surface:#ffffff;--surface-2:#edf3f3;--surface-3:#e1eded;--line:rgba(30,59,70,.13);--text:#173036;--muted:#657b83;--muted-2:#778d91;--accent:#0c7f56;--accent-strong:#36b77e;--accent-dim:rgba(30,163,102,.095);--blue:#176dba;--amber:#9c6b1a;--danger:#b63f52;--shadow:0 18px 35px rgba(22,55,47,.06);}
+    [data-theme="light"] .hero {background: radial-gradient(ellipse at 95% 15%,rgba(95,196,139,.22), transparent 43%),linear-gradient(135deg,#e7f7ec,#e8f0f5 70%);}
+    [data-theme="light"] .hero p {color:#5f7872;}
+    [data-theme="light"] .hero::after {color:rgba(26,137,75,.06);}
+    [data-theme="light"] .btn {color:#fff;background:#12774c;}
+    [data-theme="light"] .btn.secondary {color:var(--text);background:#fff;border-color:var(--line);}
+    [data-theme="light"] .btn.outline {background:transparent;color:var(--text);}
+    [data-theme="light"] .code {background:#eaf0f3;color:#213849;}
+    [data-theme="light"] .notes {background:#f7fafb;}
+    [data-theme="light"] .lesson-content p,[data-theme="light"] .lesson-content li {color:#4d6b73;}
+    [data-theme="light"] .checklist li {color:#536b72;}
+    [data-theme="light"] .callout {color:#266946;}
+    [data-theme="light"] .quiz-feedback {color:#266946;}
+    [data-theme="light"] .stat .symbol {color:#137e50;}
+    @media(max-width:1150px){.stats {grid-template-columns:repeat(2,minmax(0,1fr));}.layout-two {grid-template-columns:1fr;}.module-grid {grid-template-columns:repeat(2,minmax(0,1fr));}.detail-layout {grid-template-columns:1fr;}.right-stack {position:static;}}
+    @media(max-width:780px){.app {display:block;}.sidebar {position:fixed; transform:translateX(-110%);transition:transform .2s;width:256px;box-shadow:0 15px 45px rgba(0,0,0,.25);}.sidebar.open {transform:translateX(0);}.mobile-shade.visible {display:block;position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:11;}.menu-btn {display:grid;}.topbar {padding-top:17px;}.content {padding-top:25px;}.hero {border-radius:18px;}.module-grid {grid-template-columns:1fr 1fr;}.top-actions .pill {display:none;}}
+    @media(max-width:520px){.stats,.module-grid {grid-template-columns:1fr 1fr;}.stat {padding:16px;}.stat .value {font-size:27px;}.module-card {padding:15px;min-height:180px;}.module-card h3{font-size:14px;}.module-card p{font-size:11px;}.module-card .arrow {display:none;}.section-head {align-items:start;}.section-head h2{font-size:20px;}.hero h1 {letter-spacing:-1.4px;}.module-toggle {padding:15px 13px;gap:10px;}.module-num {width:33px;height:33px;font-size:12px;}.module-label strong {font-size:13px;}.module-progress-text {display:none;}.lesson-row .small-tag {display:none;}.progress-flex {flex-direction:column;text-align:center;}.filters {width:100%;}.filter {flex:1;}.search {max-width:none;}.hero .actions .btn {width:100%;}}
+    @media(prefers-reduced-motion:reduce){html {scroll-behavior:auto;}*,*:before,*:after {transition:none !important;}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#overview" data-route="overview" aria-label="Rust Lab home"><span class="brand-icon">🦀</span><div><strong>rust<span style="color:var(--accent)">.lab</span></strong><span>Systems engineering</span></div></a>
+      <div>
+        <div class="small-heading">WORKSPACE</div>
+        <nav class="nav" aria-label="Main navigation">
+          <button data-view="overview" class="active"><span class="sym">◈</span> Overview</button>
+          <button data-view="curriculum"><span class="sym">▤</span> Curriculum</button>
+          <button data-view="lesson"><span class="sym">⌘</span> Lesson workspace</button>
+          <button data-view="settings"><span class="sym">⚙</span> Backups & settings</button>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="small-heading">YOUR LEARNING PATH</div>
+        <div class="side-progress"><div><span>Total course progress</span><strong id="sidebarPct">2%</strong></div><div class="thin-bar"><div id="sidebarBar"></div></div><p id="sidebarHint">Your next milestone awaits.</p></div>
+        <div class="sidebar-foot">Built for Rust + robotics · v1.0</div>
+      </div>
+    </aside>
+    <div id="mobileShade" class="mobile-shade" aria-hidden="true"></div>
+    <main class="main">
+      <header class="topbar"><div style="display:flex;align-items:center;gap:12px;"><button id="menuBtn" class="icon-btn menu-btn" aria-label="Open navigation">☰</button><div class="breadcrumbs">LEARNING LAB <span style="margin:0 8px;opacity:.6">/</span> <strong id="breadcrumb">Overview</strong></div></div><div class="top-actions"><span class="pill"><span class="dot"></span> SELF-PACED COURSE</span><button id="themeBtn" class="icon-btn" title="Toggle light / dark theme" aria-label="Toggle light / dark theme">☀</button></div></header>
+      <div class="content">
+        <section id="overview" class="view">
+          <div class="hero"><div class="eyebrow">THE ROAD TO RELIABLE ROBOTICS</div><h1>Build the brain.<br>Understand the bolts.</h1><p>From your first <code>let mut</code> to a tested mecanum-drive library. A hands-on Rust learning journey designed for engineers who use AI agents but verify the code themselves.</p><div class="actions"><button class="btn" id="heroContinue">Continue learning →</button><button class="btn secondary" data-go="curriculum">Explore roadmap ↗</button></div></div>
+          <div class="stats"><div class="stat"><div class="label">Lessons completed</div><div class="value"><span id="doneStat">1</span><span class="symbol">✓</span></div><div class="sub">Evidence over speed</div></div><div class="stat"><div class="label">Lessons remaining</div><div class="value" id="leftStat">53</div><div class="sub">One concept at a time</div></div><div class="stat"><div class="label">Modules completed</div><div class="value" id="moduleStat">0 / 8</div><div class="sub">Eight engineering stages</div></div><div class="stat"><div class="label">Overall progress</div><div class="value" id="pctStat">2%</div><div class="sub">Your learning, at your pace</div></div></div>
+          <div class="section"><div class="section-head"><div><h2>Pick up where you left off</h2><p>Your next checkpoint and the skills it unlocks.</p></div></div><div class="layout-two"><div class="card tint"><div class="stepnum" id="nextBadge">UP NEXT · LESSON 1.2</div><h3 class="next-title" id="nextTitle">Rust data types</h3><p id="nextDesc">Learn how the compiler interprets integers, floats, booleans and text, and why choosing the right type matters for motors and sensors.</p><div class="lesson-meta"><span>◷ 15–25 min</span><span>◇ Beginner</span><span>⚙ Robotics examples</span></div><button class="btn" id="nextBtn">Open lesson →</button></div><div class="card"><h3>Course checkpoint</h3><div class="progress-flex"><div class="donut" id="donut"><div class="donut-inner"><strong id="donutPct">2%</strong><span>Complete</span></div></div><div><div style="font-size:12px;font-weight:700;">Steady progress is real progress.</div><p style="font-size:12px;margin:7px 0 0;">Each completed lesson should mean you can explain, apply, and review the concept.</p></div></div><ul class="checklist"><li><span class="bullet">✓</span> Understand the concept</li><li><span class="bullet">✓</span> Write the exercise yourself</li><li><span class="bullet">✓</span> Verify with tests or review</li></ul></div></div></div>
+          <div class="section"><div class="section-head"><div><h2>Your engineering roadmap</h2><p>Eight modules, from syntax to agent-driven systems validation.</p></div><button class="btn outline" data-go="curriculum">View all lessons ↗</button></div><div id="moduleCards" class="module-grid"></div></div>
+          <p class="footer-note">Your completion checkmarks and notes are stored in this browser. Export backups regularly if you switch devices or clear browser data.</p>
+        </section>
+        <section id="curriculum" class="view hidden"><div class="header-line"><div class="eyebrow">THE FULL PATH</div><h1>Every lesson. Every milestone.</h1><p>Mark topics complete only when you understand them and have reviewed your exercise. All lessons are accessible, so you can look ahead without losing your place.</p></div><div class="toolbar"><input id="lessonSearch" class="search" type="search" placeholder="Search lessons, e.g. ownership or encoders" aria-label="Search lessons"><div class="filters" role="group" aria-label="Filter lessons"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="remaining">To do</button><button class="filter" data-filter="done">Completed</button></div></div><div id="curriculumModules"></div></section>
+        <section id="lesson" class="view hidden"><div class="header-line"><div class="eyebrow" id="lessonEyebrow">CURRENT LESSON</div><h1 id="lessonHeading">1.2 · Rust data types</h1><p id="lessonSubtitle">Make the compiler understand what kind of data your robot is using.</p></div><div class="detail-layout"><article class="card lesson-content" id="lessonArticle"></article><aside class="right-stack"><div class="card"><div class="big-id" id="lessonSidebarId">LESSON 1.2</div><h3 id="lessonSidebarTitle" style="margin-top:10px;">Data types</h3><p>Only mark complete after you've practiced and can explain the concept back.</p><div class="toggle-line"><span style="font-size:12px;color:var(--muted);">Lesson status</span><button class="status-btn" id="detailStatusBtn">Mark complete</button></div></div><div class="card"><h3>Your engineering notebook</h3><p>Compiler errors, questions, exercise notes, or things you'd ask an AI agent to verify.</p><textarea class="notes" id="lessonNotes" placeholder="Today I learned...\nOne thing I still don't understand...\nMy exercise result..."></textarea><div class="quiet" style="margin-top:9px;">Autosaves in this browser <span id="savedIndicator" aria-live="polite"></span></div></div><div class="card"><h3>Keep your standards high</h3><div class="milestone"><div class="marker">1</div><div><strong>Understand</strong><span>Explain what the code does.</span></div></div><div class="milestone"><div class="marker">2</div><div><strong>Implement</strong><span>Complete the coding exercise.</span></div></div><div class="milestone"><div class="marker">3</div><div><strong>Verify</strong><span>Run, inspect, and review your code.</span></div></div></div></aside></div></section>
+        <section id="settings" class="view hidden"><div class="header-line"><div class="eyebrow">OWN YOUR LEARNING DATA</div><h1>Backups & settings</h1><p>Everything works without a server. Your progress remains on this browser unless you export and import it elsewhere.</p></div><div class="settings-row"><div class="settings-card"><div><h3>Export progress</h3><p>Download a JSON backup with completion status and notes for every lesson.</p></div><button id="exportBtn" class="btn">↓ Export JSON</button></div><div class="settings-card"><div><h3>Import a backup</h3><p>Restore your progress from an exported JSON file. Import replaces current local progress.</p></div><button id="importBtn" class="btn secondary">↑ Import JSON</button><input type="file" id="importFile" class="file-picker" accept="application/json,.json" aria-label="Choose progress backup"></div><div class="settings-card"><div><h3>Start course over</h3><p>Remove saved progress and notes; return to Lesson 1.1 completed and Lesson 1.2 up next.</p></div><button id="resetBtn" class="btn danger">Reset progress</button></div></div><div class="card" style="margin-top:17px;"><h3>About data storage</h3><p>This dashboard uses <span class="inline-code">localStorage</span>. There is no account login, tracking service, or cloud synchronization. Using GitHub Pages hosts the website code but does <strong>not</strong> sync lesson completion across devices. Export/import is your portable backup.</p><p style="margin-bottom:0">If browser storage is blocked or cleared, unsaved progress may be lost. For the most reliable use, open it from a fixed GitHub Pages URL in the same browser profile.</p></div></section>
+      </div>
+    </main>
+  </div>
+  <script>
+  'use strict';
+  const modules = [
+    {title:'Rust foundations', subtitle:'Syntax, types, control flow & collections', lessons:[
+      ['1.1','Variables & mutability','let, mut and reassignment'],
+      ['1.2','Primitive data types','Integers, floats, bool, char and &str'],
+      ['1.3','Strings and text','&str, String and basic conversions'],
+      ['1.4','Functions & expressions','Parameters, return values and blocks'],
+      ['1.5','if and match','Branching and pattern matching basics'],
+      ['1.6','Loops & iteration','loop, while, for and ranges'],
+      ['1.7','Arrays, tuples & Vec','Fixed and growable collections'],
+      ['1.8','Motor-speed calculator','Module project · practice and review']
+    ]},
+    {title:'Ownership & memory', subtitle:'The concepts that make Rust different', lessons:[
+      ['2.1','Stack, heap & ownership','What owns memory and why'],
+      ['2.2','Moves & Copy','Assignment and transfer of ownership'],
+      ['2.3','Borrowing with references','Read data without taking ownership'],
+      ['2.4','Mutable borrowing','Exclusive access and aliasing rules'],
+      ['2.5','Slices & string references','Borrow parts of data safely'],
+      ['2.6','Lifetimes conceptually','Why references must remain valid'],
+      ['2.7','Motor-state manager','Module project · avoid unnecessary clones']
+    ]},
+    {title:'Type-driven design', subtitle:'Structs, enums, traits & generics', lessons:[
+      ['3.1','Structs & fields','Represent a motor or encoder'],
+      ['3.2','Methods and impl','Build behavior into data types'],
+      ['3.3','Enums & match','Represent discrete robot operating modes'],
+      ['3.4','Option and Result intro','Model absent values and failures'],
+      ['3.5','Traits & derives','Shared behavior, Debug and Default'],
+      ['3.6','Basic generics','Reusable functions and types'],
+      ['3.7','Robot-state model','Module project · four wheel states']
+    ]},
+    {title:'Errors & verification', subtitle:'Test boundaries before they fail in hardware', lessons:[
+      ['4.1','Result and the ? operator','Propagate recoverable errors'],
+      ['4.2','Error design','Error types vs panics'],
+      ['4.3','Unit tests','Assert expected behavior'],
+      ['4.4','Integration tests','Test public APIs'],
+      ['4.5','fmt, clippy & validation','Formatting and static diagnostics'],
+      ['4.6','Safe velocity commands','Module project · reject invalid inputs']
+    ]},
+    {title:'Cargo & architecture', subtitle:'Build maintainable, reusable Rust modules', lessons:[
+      ['5.1','Cargo and dependencies','Packages, builds and version management'],
+      ['5.2','Modules, use and pub','Separate and expose functionality'],
+      ['5.3','Library vs binary','lib.rs and main.rs'],
+      ['5.4','APIs & invariants','Make incorrect states harder to represent'],
+      ['5.5','Documentation & feature flags','Explain public interfaces and configuration'],
+      ['5.6','Mecanum kinematics','Forward and inverse calculations'],
+      ['5.7','Tested mecanum library','Module project · numerical verification']
+    ]},
+    {title:'Concurrency & async', subtitle:'Correctness across independent tasks', lessons:[
+      ['6.1','Threads & move','Spawn tasks and transfer ownership'],
+      ['6.2','Arc, Mutex & sharing','Share state with synchronization'],
+      ['6.3','Channels & messaging','Pass measurements and commands'],
+      ['6.4','Send, Sync & data races','Rust concurrency safety concepts'],
+      ['6.5','async/await foundations','Futures and runtimes'],
+      ['6.6','Deadlocks, timing & shutdown','Avoid liveness and cancellation bugs'],
+      ['6.7','Motor and encoder simulator','Module project · concurrent workers']
+    ]},
+    {title:'Hardware systems', subtitle:'Prepare for the Raspberry Pi and real sensors', lessons:[
+      ['7.1','GPIO & PWM concepts','Think in pins, duty cycles and interfaces'],
+      ['7.2','Hardware abstraction','Design mockable driver traits'],
+      ['7.3','Encoder processing','Counts, direction and time deltas'],
+      ['7.4','Clocks, jitter & scheduling','Monotonic time and loop timing'],
+      ['7.5','Safety & fail-safe behavior','Watchdogs, saturation and stop states'],
+      ['7.6','Pi motor-control interface','Module project · safe system boundary']
+    ]},
+    {title:'Agentic engineering', subtitle:'Delegate implementation, own the evidence', lessons:[
+      ['8.1','Write testable specifications','Define contracts before coding'],
+      ['8.2','Prompt Claude Code for modules','Delegate bounded implementations'],
+      ['8.3','Review generated Rust','Question ownership, assumptions and complexity'],
+      ['8.4','Debug compiler and runtime issues','Turn errors into understanding'],
+      ['8.5','Benchmarks and validation','Measure behavior and performance'],
+      ['8.6','Rover subsystem review','Final project · critique and integrate']
+    ]}
+  ];
+  const lessons = modules.flatMap((m,mi)=>m.lessons.map(([id,title,description])=>({id,title,description,module:mi+1})));
+  const TOTAL = lessons.length;
+  const STORAGE = 'rust-systems-lab-v1';
+  const THEME_STORAGE = 'rust-systems-lab-theme-v1';
+  const defaultData = () => ({version:1,done:{'1.1':true},notes:{},updatedAt:null});
+  let state = defaultData();
+  let currentLesson = '1.2';
+  let view = 'overview';
+  let filter = 'all';
+  let search = '';
+  const openModules = new Set([1]);
+  const byId = id=>document.getElementById(id);
+  const escapeHTML = s=>String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const isDone = id=>state.done[id]===true;
+  const nDone = ()=>lessons.filter(l=>isDone(l.id)).length;
+  const firstRemaining = ()=>lessons.find(l=>!isDone(l.id)) || lessons[lessons.length-1];
+  const percent = (a,b)=>b ? Math.round((a/b)*100) : 0;
+  function load(){try{const raw=localStorage.getItem(STORAGE);if(!raw)return;const x=JSON.parse(raw);if(x && x.version===1 && typeof x.done==='object' && typeof x.notes==='object'){state={version:1,done:{},notes:{},updatedAt:x.updatedAt||null};lessons.forEach(l=>{if(x.done[l.id]===true)state.done[l.id]=true;if(typeof x.notes[l.id]==='string')state.notes[l.id]=x.notes[l.id].slice(0,10000);});}}catch(err){console.warn('Could not read saved progress',err);}}
+  function save(){state.updatedAt=new Date().toISOString();try{localStorage.setItem(STORAGE,JSON.stringify(state));}catch(err){alert('Browser storage is unavailable. Export your progress from Backups & settings before closing this page.');}}
+  function setDone(id,value){if(value)state.done[id]=true;else delete state.done[id];save();renderAll();}
+  function setView(v){if(!['overview','curriculum','lesson','settings'].includes(v))v='overview';view=v;document.querySelectorAll('.view').forEach(el=>el.classList.toggle('hidden',el.id!==v));document.querySelectorAll('[data-view]').forEach(el=>el.classList.toggle('active',el.dataset.view===v));byId('breadcrumb').textContent={overview:'Overview',curriculum:'Curriculum',lesson:'Lesson workspace',settings:'Backups & settings'}[v];closeSidebar();window.scrollTo({top:0,behavior:'auto'});if(v==='lesson')renderDetail();}
+  function openLesson(id){currentLesson=id;setView('lesson');}
+  function renderStats(){const done=nDone(),left=TOTAL-done,pct=percent(done,TOTAL);const modDone=modules.filter(m=>m.lessons.every(([id])=>isDone(id))).length;
+    byId('doneStat').textContent=done;byId('leftStat').textContent=left;byId('moduleStat').textContent=modDone+' / 8';byId('pctStat').textContent=pct+'%';byId('sidebarPct').textContent=pct+'%';byId('sidebarBar').style.width=pct+'%';byId('sidebarHint').textContent=`${left} lesson${left===1?'':'s'} left · ${modDone} modules finished`;byId('donutPct').textContent=pct+'%';byId('donut').style.setProperty('--pct',pct+'%');
+    const next=firstRemaining();byId('nextBadge').textContent=left?'UP NEXT · LESSON '+next.id:'ALL LESSONS COMPLETE';byId('nextTitle').textContent=left?next.title:'Roadmap complete!';byId('nextDesc').textContent=left?next.description+'. Open this lesson, write the exercise and review your understanding.':'You made it through every checkpoint. Revisit tests and keep expanding the rover library.';
+    byId('nextBtn').textContent=left?'Open lesson →':'Review final lesson →';}
+  function renderCards(){byId('moduleCards').innerHTML=modules.map((m,i)=>{let done=m.lessons.filter(([id])=>isDone(id)).length;let pct=percent(done,m.lessons.length);return `<button class="module-card" data-mod="${i+1}"><div class="top"><span class="module-index">MODULE ${String(i+1).padStart(2,'0')}</span><span class="module-fraction">${done}/${m.lessons.length} lessons</span></div><h3>${escapeHTML(m.title)}</h3><p>${escapeHTML(m.subtitle)}</p><div class="thin-bar"><div style="width:${pct}%"></div></div><span class="arrow">↗</span></button>`}).join('');}
+  function renderCurriculum(){const wrap=byId('curriculumModules');let visible=0;wrap.innerHTML=modules.map((m,i)=>{const mIndex=i+1,items=m.lessons.filter(([id,title,description])=>{const matches=[id,title,description,m.title,m.subtitle].join(' ').toLowerCase().includes(search.toLowerCase());return matches&&(filter==='all'||(filter==='done'&&isDone(id))||(filter==='remaining'&&!isDone(id)));});if(!items.length)return '';visible+=items.length;const done=m.lessons.filter(([id])=>isDone(id)).length;const opened=openModules.has(mIndex)||search.trim()!==''||filter!=='all';return `<div class="module-group ${opened?'open':''}" data-module="${mIndex}"><button class="module-toggle" data-toggle="${mIndex}" aria-expanded="${opened}" aria-controls="rows-${mIndex}"><span class="module-num">${String(mIndex).padStart(2,'0')}</span><span class="module-label"><strong>${escapeHTML(m.title)}</strong><span>${escapeHTML(m.subtitle)}</span></span><span class="module-progress-text">${done}/${m.lessons.length} complete</span><span class="chevron">⌄</span></button><div class="lesson-rows ${opened?'':'hidden'}" id="rows-${mIndex}">${items.map(([id,title,description])=>`<div class="lesson-row"><div class="info"><span class="lesson-id">${id}</span><div><button class="lesson-title-btn" data-open="${id}">${escapeHTML(title)}</button><div class="small-tag">${escapeHTML(description)}</div></div></div><button class="status-btn ${isDone(id)?'done':''}" data-status="${id}" aria-label="${isDone(id)?'Mark incomplete':'Mark complete'}: ${escapeHTML(title)}">${isDone(id)?'✓ Done':'+ Complete'}</button></div>`).join('')}</div></div>`;}).join('');if(!visible)wrap.innerHTML='<div class="empty">No matching lessons. Try a different search or filter.</div>';}
+  function contentFor(id){if(id==='1.2')return `<h2>1 · Concept & intuition</h2><p>Every value has a <strong>type</strong>. Rust uses types to decide what operations make sense and how to represent a value. A motor's signed speed, a wheel radius and an obstacle flag describe different kinds of information.</p><div class="callout">A type is an engineering constraint: it tells both the compiler and a future reviewer what kind of value is expected.</div><h2>2 · Essential syntax</h2><div class="code">let target_rpm: i32 = -120;      // signed integer\nlet encoder_ticks: u32 = 400;    // unsigned integer\nlet wheel_radius_m: f64 = 0.0325; // floating-point\nlet obstacle_seen: bool = false;  // true or false\nlet motor_id: &amp;str = "front_left"; // borrowed text</div><p>The pattern is <span class="inline-code">let name: Type = value;</span>. Rust often infers a type when you omit <span class="inline-code">: Type</span>, but annotations can clarify an engineering interface.</p><ul><li><strong>i32</strong>: signed 32-bit integer. Allows negative wheel RPM when reverse motion is represented by a negative value.</li><li><strong>u32</strong>: unsigned 32-bit integer. Useful for counts that never go below zero.</li><li><strong>f64</strong>: 64-bit floating-point. Useful for measurements and kinematics, but results may be approximate.</li><li><strong>bool</strong>: <span class="inline-code">true</span> or <span class="inline-code">false</span>.</li><li><strong>&amp;str</strong>: a string slice, commonly used for fixed text literals. We'll explore <span class="inline-code">String</span> next lesson.</li></ul><h2>3 · Practical rover example</h2><div class="code">fn main() {\n    let wheel_rpm: i32 = -90;\n    let wheel_radius_m: f64 = 0.0325;\n    let emergency_stop: bool = false;\n\n    println!("RPM: {}", wheel_rpm);\n    println!("Radius: {} m", wheel_radius_m);\n    println!("Stop requested: {}", emergency_stop);\n}</div><p>The values have different meanings. Rust won't casually treat <span class="inline-code">false</span> as a speed or a text label as a wheel radius. This catches a class of mistakes earlier, at compile time.</p><h2>4 · Common mistakes</h2><ul><li><strong>Mixing numeric types:</strong> Rust does not automatically combine an <span class="inline-code">i32</span> and an <span class="inline-code">f64</span> in arithmetic. Conversions should be explicit.</li><li><strong>Using unsigned integers for signed motion:</strong> <span class="inline-code">u32</span> can't represent negative RPM.</li><li><strong>Assuming floats are exact:</strong> floating-point calculations can have rounding error. We'll test kinematics using tolerances, not always exact equality.</li><li><strong>Choosing a type by habit:</strong> pick based on the actual physical range, interface and constraints.</li></ul><h2>5 · Your coding exercise</h2><div class="callout"><strong>Do this in VS Code, without copying a full solution.</strong> Create <span class="inline-code">src/bin/lesson_1_2.rs</span>. Inside <span class="inline-code">fn main()</span>, declare a signed target RPM of -150, a wheel radius of 0.0325 meters, an emergency-stop flag set to false, and a wheel name. Explicitly annotate their types. Print all four values, run with <span class="inline-code">cargo run --bin lesson_1_2</span>, and bring the code back for review.</div><h2>6 · Short knowledge check</h2><p>Select one answer per question, then check your understanding. This quiz is local to the page and won't automatically mark the lesson done.</p><div id="quizArea"><div class="quiz-question"><strong>Q1. Which type naturally represents a wheel RPM that can be negative?</strong><label class="quiz-option"><input type="radio" name="q1" value="a"> u32</label><label class="quiz-option"><input type="radio" name="q1" value="b"> i32</label><label class="quiz-option"><input type="radio" name="q1" value="c"> bool</label></div><div class="quiz-question"><strong>Q2. Which type is appropriate for a wheel radius measured as 0.0325 meters?</strong><label class="quiz-option"><input type="radio" name="q2" value="a"> f64</label><label class="quiz-option"><input type="radio" name="q2" value="b"> bool</label><label class="quiz-option"><input type="radio" name="q2" value="c"> char</label></div><div class="quiz-question"><strong>Q3. What does <span class="inline-code">let speed: i32 = 120;</span> explicitly specify?</strong><label class="quiz-option"><input type="radio" name="q3" value="a"> The variable must change</label><label class="quiz-option"><input type="radio" name="q3" value="b"> The variable is a 32-bit signed integer</label><label class="quiz-option"><input type="radio" name="q3" value="c"> The variable is a floating-point number</label></div><button id="checkQuiz" class="btn" type="button">Check my answers →</button><div id="quizFeedback" aria-live="polite"></div></div>`;
+    if(id==='1.1')return `<h2>Variables & mutability</h2><p><strong>Completed in chat!</strong> You correctly explained why <span class="inline-code">mut</span> is useful and wrote your first motor-RPM program.</p><div class="code">fn main() {\n    let mut motor_rpm = 120;\n    motor_rpm += 30;\n\n    let motor_name = "Motor A";\n    println!("Motor Name: {}", motor_name);\n    println!("Motor RPM: {}", motor_rpm);\n}</div><p><strong>Core takeaway:</strong> A Rust variable binding is immutable unless declared with <span class="inline-code">mut</span>. Assigning a value when declaring a new variable is not the same as reassigning the old one.</p><h2>Review question</h2><p>Would <span class="inline-code">let double_rpm = motor_rpm * 2;</span> require <span class="inline-code">mut</span> if you only calculate it once? Explain why.</p>`;
+    const l=lessons.find(l=>l.id===id);
+    return `<h2>Lesson outline</h2><p><strong>${escapeHTML(l.title)}</strong> is part of Module ${l.module}. Its focus is ${escapeHTML(l.description.toLowerCase())}.</p><div class="callout">We'll teach this lesson step by step in ChatGPT when you reach it. This page is a standalone roadmap and notebook, not a replacement for live code review.</div><h2>How to complete this lesson</h2><ul><li>Understand the concept and explain why it matters.</li><li>Write a small Rust exercise yourself.</li><li>Run it, examine warnings and compiler errors, and review the solution.</li><li>Document what you learned in your notes before marking it complete.</li></ul><p>The title is here now; the full interactive teaching content will be added progressively as we reach more lessons.</p>`;
+  }
+  function renderDetail(){const l=lessons.find(x=>x.id===currentLesson)||firstRemaining();currentLesson=l.id;byId('lessonEyebrow').textContent='MODULE '+String(l.module).padStart(2,'0')+' / LESSON '+l.id;byId('lessonHeading').textContent=l.id+' · '+l.title;byId('lessonSubtitle').textContent=l.description;byId('lessonArticle').innerHTML=contentFor(l.id);byId('lessonSidebarId').textContent='LESSON '+l.id;byId('lessonSidebarTitle').textContent=l.title;byId('lessonNotes').value=state.notes[l.id]||'';byId('savedIndicator').textContent='';const btn=byId('detailStatusBtn');btn.classList.toggle('done',isDone(l.id));btn.textContent=isDone(l.id)?'✓ Completed · Undo':'Mark complete';const quiz=byId('checkQuiz');if(quiz)quiz.addEventListener('click',checkQuiz);}
+  function checkQuiz(){const form=byId('quizArea');const answers=['b','a','b'];const chosen=[...form.querySelectorAll('input[name=q1]:checked, input[name=q2]:checked, input[name=q3]:checked')];const feedback=byId('quizFeedback');if(chosen.length!==3){feedback.className='quiz-feedback';feedback.textContent='Answer all three questions first.';return;}const selected=['q1','q2','q3'].map(q=>form.querySelector(`input[name=${q}]:checked`).value);const score=selected.filter((v,i)=>v===answers[i]).length;feedback.className='quiz-feedback';feedback.innerHTML=`<strong>${score}/3 correct.</strong> ${score===3?'Excellent. Now finish your coding exercise and review it before marking complete.':'Review the types above and try again.'}<br>${selected.map((v,i)=>v===answers[i]?`Q${i+1}: correct ✓`:`Q${i+1}: revisit ${['signed vs unsigned integers','measurement types','explicit type annotations'][i]}`).join(' · ')}`;}
+  function renderAll(){renderStats();renderCards();renderCurriculum();if(view==='lesson')renderDetail();}
+  function closeSidebar(){byId('sidebar').classList.remove('open');byId('mobileShade').classList.remove('visible');}
+  function backup(){const content=JSON.stringify({app:'rust-systems-learning-lab',exportedAt:new Date().toISOString(),...state},null,2);const blob=new Blob([content],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rust-lab-progress-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+  async function restore(file){if(!file)return;try{const raw=await file.text();if(raw.length>2_000_000)throw new Error('File is too large.');const x=JSON.parse(raw);if(x.app!=='rust-systems-learning-lab'||x.version!==1||!x.done||typeof x.done!=='object'||Array.isArray(x.done)||!x.notes||typeof x.notes!=='object'||Array.isArray(x.notes))throw new Error('Not a valid Rust Lab backup.');if(!confirm('Replace current progress and notes with this backup?'))return;state=defaultData();lessons.forEach(l=>{if(x.done[l.id]===true)state.done[l.id]=true;if(typeof x.notes[l.id]==='string')state.notes[l.id]=x.notes[l.id].slice(0,10000);});save();renderAll();alert('Progress restored successfully.');setView('overview');}catch(err){alert('Could not import this file: '+err.message);}finally{byId('importFile').value='';}}
+  function initialize(){load();let theme='dark';try{theme=localStorage.getItem(THEME_STORAGE)||'dark';}catch(_e){}document.documentElement.dataset.theme=theme==='light'?'light':'dark';byId('themeBtn').textContent=theme==='light'?'☾':'☀';
+    document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>setView(btn.dataset.view)));
+    document.querySelectorAll('[data-go]').forEach(btn=>btn.addEventListener('click',()=>setView(btn.dataset.go)));
+    document.querySelector('[data-route]').addEventListener('click',e=>{e.preventDefault();setView('overview');});
+    byId('heroContinue').addEventListener('click',()=>openLesson(firstRemaining().id));byId('nextBtn').addEventListener('click',()=>openLesson(firstRemaining().id));
+    byId('moduleCards').addEventListener('click',e=>{const el=e.target.closest('[data-mod]');if(el){openModules.add(Number(el.dataset.mod));setView('curriculum');renderCurriculum();byId('curriculumModules').querySelector(`[data-module="${el.dataset.mod}"]`)?.scrollIntoView({block:'start',behavior:'smooth'});}});
+    byId('curriculumModules').addEventListener('click',e=>{const status=e.target.closest('[data-status]');if(status){setDone(status.dataset.status,!isDone(status.dataset.status));return;}const open=e.target.closest('[data-open]');if(open){openLesson(open.dataset.open);return;}const toggle=e.target.closest('[data-toggle]');if(toggle){const i=Number(toggle.dataset.toggle);if(openModules.has(i))openModules.delete(i);else openModules.add(i);renderCurriculum();}});
+    byId('lessonSearch').addEventListener('input',e=>{search=e.target.value;renderCurriculum();});document.querySelectorAll('[data-filter]').forEach(btn=>btn.addEventListener('click',()=>{filter=btn.dataset.filter;document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b===btn));renderCurriculum();}));
+    byId('detailStatusBtn').addEventListener('click',()=>setDone(currentLesson,!isDone(currentLesson)));
+    byId('lessonNotes').addEventListener('input',e=>{state.notes[currentLesson]=e.target.value.slice(0,10000);save();byId('savedIndicator').textContent='· Saved';});
+    byId('exportBtn').addEventListener('click',backup);byId('importBtn').addEventListener('click',()=>byId('importFile').click());byId('importFile').addEventListener('change',e=>restore(e.target.files[0]));
+    byId('resetBtn').addEventListener('click',()=>{if(confirm('Reset all lesson checkmarks and notes? This cannot be undone unless you exported a backup.')){state=defaultData();save();currentLesson='1.2';renderAll();setView('overview');}});
+    byId('themeBtn').addEventListener('click',()=>{const newTheme=document.documentElement.dataset.theme==='light'?'dark':'light';document.documentElement.dataset.theme=newTheme;byId('themeBtn').textContent=newTheme==='light'?'☾':'☀';try{localStorage.setItem(THEME_STORAGE,newTheme);}catch(_e){}});
+    byId('menuBtn').addEventListener('click',()=>{byId('sidebar').classList.toggle('open');byId('mobileShade').classList.toggle('visible');});byId('mobileShade').addEventListener('click',closeSidebar);
+    renderAll();setView('overview');
+  }
+  initialize();
+  </script>
+</body>
+</html>
